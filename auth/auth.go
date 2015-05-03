@@ -41,8 +41,9 @@ func (a *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	auth, err := utils.ParseAuthHeader(r.Header.Get("Authorization"))
 	// Reject the request by writing forbidden response
 	if err != nil || a.cfg.Username != auth.Username || a.cfg.Password != auth.Password {
-		w.WriteHeader(http.StatusForbidden)
-		io.WriteString(w, "Forbidden")
+		w.WriteHeader(http.StatusUnauthorized)
+		io.WriteString(w, "Unauthorized")
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"Restricted\"")
 		return
 	}
 	// Pass the request to the next middleware in chain

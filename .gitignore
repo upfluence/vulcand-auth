@@ -1,1 +1,5 @@
 *.test
+main.go
+vulcand*
+registry/
+vctl/

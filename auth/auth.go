@@ -43,7 +43,7 @@ func (a *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	auth, errAuth := utils.ParseAuthHeader(r.Header.Get("Authorization"))
 	regex, errRegexp := regexp.Compile(a.cfg.RegexPath)
 
-	if errRegexp != nil && regex.MatchString(r.URL.Path) {
+	if errRegexp != nil || regex.MatchString(r.URL.Path) {
 		// Reject the request by writing forbidden response
 		if errAuth != nil || a.cfg.Username != auth.Username || a.cfg.Password != auth.Password {
 			w.WriteHeader(http.StatusUnauthorized)

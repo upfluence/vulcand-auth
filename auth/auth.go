@@ -99,6 +99,6 @@ func CliFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.StringFlag{"user, u", "", "Basic auth username", ""},
 		cli.StringFlag{"pass, p", "", "Basic auth pass", ""},
-		cli.StringFlag{"regexp_path, r", "", "Regexp of path applied", ""},
+		cli.StringFlag{"regexp_path", "/.*", "Regexp of path applied", ""},
 	}
 }

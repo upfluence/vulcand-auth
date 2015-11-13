@@ -27,7 +27,7 @@ func (s *AuthSuite) TestSpecIsOK(c *C) {
 }
 
 func (s *AuthSuite) TestNew(c *C) {
-	cl, err := New("user", "pass", "")
+	cl, err := New("user", "pass")
 	c.Assert(cl, NotNil)
 	c.Assert(err, IsNil)
 
@@ -40,16 +40,16 @@ func (s *AuthSuite) TestNew(c *C) {
 
 func (s *AuthSuite) TestNewBadParams(c *C) {
 	// Empty pass
-	_, err := New("user", "", "")
+	_, err := New("user", "")
 	c.Assert(err, NotNil)
 
 	// Empty user
-	_, err = New("", "pass", "")
+	_, err = New("", "pass")
 	c.Assert(err, NotNil)
 }
 
 func (s *AuthSuite) TestFromOther(c *C) {
-	a, err := New("user", "pass", "")
+	a, err := New("user", "pass")
 	c.Assert(a, NotNil)
 	c.Assert(err, IsNil)
 
@@ -75,24 +75,6 @@ func (s *AuthSuite) TestAuthFromCli(c *C) {
 	app.Flags = CliFlags()
 	app.Run([]string{"test", "--user=user1", "--pass=pass1"})
 	c.Assert(executed, Equals, true)
-}
-
-func (s *AuthSuite) TestRequestNotSecuredPath(c *C) {
-	a := &AuthMiddleware{Username: "aladdin", Password: "open sesame", RegexPath: "/fuzz/.*"}
-
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, "treasure")
-	})
-
-	auth, err := a.NewHandler(h)
-	c.Assert(err, IsNil)
-
-	srv := httptest.NewServer(auth)
-	defer srv.Close()
-
-	_, body, err := testutils.Get(srv.URL)
-	c.Assert(err, IsNil)
-	c.Assert(string(body), Equals, "treasure")
 }
 
 func (s *AuthSuite) TestRequestSuccess(c *C) {

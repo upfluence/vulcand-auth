@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 
 	"github.com/vulcand/vulcand/Godeps/_workspace/src/github.com/codegangsta/cli"
 	"github.com/vulcand/vulcand/Godeps/_workspace/src/github.com/vulcand/oxy/utils"
@@ -27,9 +26,8 @@ func GetSpec() *plugin.MiddlewareSpec {
 // AuthMiiddleware struct holds configuration parameters and is used to
 // serialize/deserialize the configuration from storage engines.
 type AuthMiddleware struct {
-	Password  string
-	Username  string
-	RegexPath string
+	Password string
+	Username string
 }
 
 // Auth middleware handler
@@ -40,33 +38,24 @@ type AuthHandler struct {
 
 // This function will be called each time the request hits the location with this middleware activated
 func (a *AuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	auth, errAuth := utils.ParseAuthHeader(r.Header.Get("Authorization"))
-	regex, errRegexp := regexp.Compile(a.cfg.RegexPath)
-
-	if errRegexp != nil && regex.MatchString(r.URL.Path) {
-		// Reject the request by writing forbidden response
-		if errAuth != nil || a.cfg.Username != auth.Username || a.cfg.Password != auth.Password {
-			w.WriteHeader(http.StatusUnauthorized)
-			io.WriteString(w, "Unauthorized")
-			w.Header().Set("WWW-Authenticate", "Basic realm=\"Restricted\"")
-			return
-		}
+	auth, err := utils.ParseAuthHeader(r.Header.Get("Authorization"))
+	// Reject the request by writing forbidden response
+	if err != nil || a.cfg.Username != auth.Username || a.cfg.Password != auth.Password {
+		w.WriteHeader(http.StatusUnauthorized)
+		io.WriteString(w, "Unauthorized")
+		w.Header().Set("WWW-Authenticate", "Basic realm=\"Restricted\"")
+		return
 	}
 	// Pass the request to the next middleware in chain
 	a.next.ServeHTTP(w, r)
 }
 
 // This function is optional but handy, used to check input parameters when creating new middlewares
-func New(user, pass, regexpPath string) (*AuthMiddleware, error) {
-	if regexpPath == "" {
-		regexpPath = "/.*"
-	}
-
+func New(user, pass string) (*AuthMiddleware, error) {
 	if user == "" || pass == "" {
 		return nil, fmt.Errorf("Username and password can not be empty")
 	}
-
-	return &AuthMiddleware{Username: user, Password: pass, RegexPath: regexpPath}, nil
+	return &AuthMiddleware{Username: user, Password: pass}, nil
 }
 
 // This function is important, it's called by vulcand to create a new handler from the middleware config and put it into the
@@ -86,12 +75,12 @@ func (c *AuthMiddleware) String() string {
 // The first and the only parameter should be the struct itself, no pointers and other variables.
 // Function should return middleware interface and error in case if the parameters are wrong.
 func FromOther(c AuthMiddleware) (plugin.Middleware, error) {
-	return New(c.Username, c.Password, c.RegexPath)
+	return New(c.Username, c.Password)
 }
 
 // FromCli constructs the middleware from the command line
 func FromCli(c *cli.Context) (plugin.Middleware, error) {
-	return New(c.String("user"), c.String("pass"), c.String("regexp_path"))
+	return New(c.String("user"), c.String("pass"))
 }
 
 // CliFlags will be used by Vulcand construct help and CLI command for the vctl command
@@ -99,6 +88,5 @@ func CliFlags() []cli.Flag {
 	return []cli.Flag{
 		cli.StringFlag{"user, u", "", "Basic auth username", ""},
 		cli.StringFlag{"pass, p", "", "Basic auth pass", ""},
-		cli.StringFlag{"regexp_path, r", "", "Regexp of path applied", ""},
 	}
 }
